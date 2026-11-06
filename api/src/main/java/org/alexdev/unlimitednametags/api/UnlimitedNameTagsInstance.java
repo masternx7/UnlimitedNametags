@@ -26,6 +26,7 @@ public interface UnlimitedNameTagsInstance {
 
     /**
      * Formats raw nametag text for display (MiniPlaceholders when available on Paper, else MiniMessage).
+     * Accepts {@code <#RRGGBB>}, {@code &#RRGGBB}, and {@code &x&R&R&G&G&B&B} hex colors.
      */
     @NotNull
     Component formatTextForNametag(@NotNull Audience audience, @NotNull String text);

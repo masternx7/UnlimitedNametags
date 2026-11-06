@@ -157,9 +157,10 @@ public class Settings {
 
         @Setter
         @Comment("""
-                Which text formatter to use (MINIMESSAGE, MINEDOWN, LEGACY or UNIVERSAL).\s
-                UNIVERSAL is the most resource intensive but supports all formatting options (except MINEDOWN).\s
-                (&x&0&8&4&c&f&bc LEGACY OF LEGACY - &#084cfbc LEGACY - &#084cfbc& MINEDOWN - <color:#084cfbc> MINIMESSAGE)""")
+                Which text formatter to use (MINIMESSAGE, LEGACY or UNIVERSAL).\s
+                UNIVERSAL is the most resource intensive but supports all formatting options.\s
+                Hex colors accept &#RRGGBB, <#RRGGBB>, and &x&R&R&G&G&B&B in every formatter.\s
+                (&x&0&8&4&c&f&b LEGACY - &#084cfb LEGACY - <#084cfb> MINIMESSAGE)""")
         private TextFormatter format = TextFormatter.MINIMESSAGE;
 
         @Comment("Remove empty lines from nametag display.")

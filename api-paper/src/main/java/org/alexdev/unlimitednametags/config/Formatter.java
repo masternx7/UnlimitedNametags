@@ -9,22 +9,20 @@ import org.alexdev.unlimitednametags.api.UnlimitedNameTagsInstancePaper;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.regex.Pattern;
-
 @SuppressWarnings("unused")
 public enum Formatter {
 
     MINIMESSAGE(
-            (plugin, player, text) -> plugin.formatTextForNametag(player, text),
+            (plugin, player, text) -> plugin.formatTextForNametag(player, HexColorCodes.toMiniMessage(text)),
             "MiniMessage"
     ),
     LEGACY(
-            (plugin, player, text) -> getSTUPID().deserialize(replaceHexColorCodes(text)),
+            (plugin, player, text) -> getSTUPID().deserialize(HexColorCodes.toLegacy(text)),
             "Legacy Text"
     ),
     UNIVERSAL(
             (plugin, player, text) -> {
-                final String legacy = getHEX().serialize(getSTUPID().deserialize(replaceHexColorCodes(text)));
+                final String legacy = getHEX().serialize(getSTUPID().deserialize(HexColorCodes.toLegacy(text)));
                 final Component component = getHEX().deserialize(legacy);
                 final String string = MiniMessage.miniMessage().serialize(component).replace("\\<", "<").replace("\\", "");
                 return MINIMESSAGE.formatter.apply(plugin, player, string);
@@ -32,22 +30,11 @@ public enum Formatter {
             "Universal"
     );
 
-    @NotNull
-    private static String replaceHexColorCodes(@NotNull String text) {
-        return text.replace('§', '&');
-    }
-
     @Getter
     private final String name;
 
     private final TriFunction<UnlimitedNameTagsInstancePaper, CommandSender, String, Component> formatter;
 
-    @Getter(value = AccessLevel.PRIVATE)
-    private static final Pattern HEX_PATTERN = Pattern.compile("&#[a-fA-F0-9]{6}");
-    @Getter(value = AccessLevel.PRIVATE)
-    private static final String LEGACY_RESET = "&r";
-    @Getter(value = AccessLevel.PRIVATE)
-    private static final String REPLACE_RESET = "###RESET###";
     @Getter(value = AccessLevel.PRIVATE)
     private static final LegacyComponentSerializer STUPID = LegacyComponentSerializer.builder()
             .character('&')

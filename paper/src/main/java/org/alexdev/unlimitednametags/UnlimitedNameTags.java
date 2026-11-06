@@ -18,6 +18,7 @@ import org.alexdev.unlimitednametags.commands.UntBrigadierCommands;
 import org.alexdev.unlimitednametags.config.ConfigManager;
 import org.alexdev.unlimitednametags.config.Formatter;
 import org.alexdev.unlimitednametags.config.GlowOverride;
+import org.alexdev.unlimitednametags.config.HexColorCodes;
 import org.alexdev.unlimitednametags.glow.DefaultNametagGlowRegistrations;
 import org.alexdev.unlimitednametags.hook.*;
 import org.alexdev.unlimitednametags.hook.hat.HatHook;
@@ -412,17 +413,18 @@ public final class UnlimitedNameTags extends JavaPlugin implements UnlimitedName
         if (audience instanceof CommandSender sender) {
             return formatTextForNametag(sender, text);
         }
-        return MiniMessage.miniMessage().deserialize(text);
+        return MiniMessage.miniMessage().deserialize(HexColorCodes.toMiniMessage(text));
     }
 
     @Override
     public @NotNull Component formatTextForNametag(@NotNull CommandSender audience, @NotNull String text) {
+        final String normalized = HexColorCodes.toMiniMessage(text);
         if (audience instanceof Player player) {
             return getHook(MiniPlaceholdersHook.class)
-                    .map(h -> h.format(text, player))
-                    .orElseGet(() -> MiniMessage.miniMessage().deserialize(text));
+                    .map(h -> h.format(normalized, player))
+                    .orElseGet(() -> MiniMessage.miniMessage().deserialize(normalized));
         }
-        return MiniMessage.miniMessage().deserialize(text);
+        return MiniMessage.miniMessage().deserialize(normalized);
     }
 
     @Override
