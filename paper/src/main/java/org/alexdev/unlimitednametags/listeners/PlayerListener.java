@@ -389,7 +389,10 @@ public class PlayerListener implements PackSendHandler {
             return;
         }
 
-        if (plugin.getConfigManager().getSettings().getVisibility().isShowWhileLooking()) {
+        // show-while-looking only gates third-party visibility. The owner's own tag must be restored
+        // immediately after hide/show cycles (HMCCosmetics wardrobe, vanish plugins, etc.).
+        if (plugin.getConfigManager().getSettings().getVisibility().isShowWhileLooking()
+                && !event.getPlayer().equals(player)) {
             return;
         }
 

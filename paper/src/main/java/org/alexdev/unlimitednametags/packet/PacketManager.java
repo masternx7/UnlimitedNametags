@@ -132,12 +132,13 @@ public class PacketManager {
     }
 
     private int[] compose(User user, Player owner, PassengerState state, int[] vanilla) {
-        List<Integer> visible = knowsOwner(user, owner)
-                ? plugin.getNametagManager().getPacketDisplays(owner).stream()
-                    .map(row -> (PacketNameTag) row)
-                    .filter(row -> row.canViewerSee(user.getUUID()))
-                    .map(PacketNameTag::displayEntityId).toList()
-                : List.of();
+        // canViewerSee() is the authoritative per-viewer row state. Do not additionally require
+        // knowsOwner(): HMC sends SetPassengers for backpack cosmetics every tick, and a stale
+        // owner-spawn cache must not make those packets drop the nametag passengers.
+        final List<Integer> visible = plugin.getNametagManager().getPacketDisplays(owner).stream()
+                .map(row -> (PacketNameTag) row)
+                .filter(row -> row.canViewerSee(user.getUUID()))
+                .map(PacketNameTag::displayEntityId).toList();
         return state.compose(vanilla, rowIds, visible);
     }
 
@@ -146,7 +147,7 @@ public class PacketManager {
         if (!isCurrent(viewer)) return;
         final PassengerState state = connections.computeIfAbsent(viewer, ignored -> new PassengerState());
         ChannelHelper.runInEventLoop(viewer.getChannel(), () -> {
-            if (!isCurrent(viewer) || connections.get(viewer) != state || !knowsOwner(viewer, owner)) return;
+            if (!isCurrent(viewer) || connections.get(viewer) != state || !owner.isOnline()) return;
             // Read the current rows here, after preceding spawn/destroy writes on this connection.
             int[] passengers = compose(viewer, owner, state, state.passengers(owner.getEntityId()));
             // Destroy packets already detach hidden rows; do not emit empty recovery mounts.

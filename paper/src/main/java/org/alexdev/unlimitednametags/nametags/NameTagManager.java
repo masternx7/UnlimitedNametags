@@ -25,7 +25,6 @@ import org.alexdev.unlimitednametags.config.Settings;
 import org.alexdev.unlimitednametags.data.NametagPlayerGlowStorage;
 import org.alexdev.unlimitednametags.data.NametagPlayerOverrideStorage;
 import org.alexdev.unlimitednametags.data.NametagPlayerPreferences;
-import org.alexdev.unlimitednametags.hook.HMCCosmeticsHook;
 import org.alexdev.unlimitednametags.hook.ViaVersionHook;
 import org.alexdev.unlimitednametags.packet.PacketNameTag;
 import org.alexdev.unlimitednametags.packet.PacketNameTags;
@@ -174,7 +173,8 @@ public class NameTagManager implements UntNametagManagerPaper {
                 .map(tag -> paperRow(tag).getOwner())
                 .filter(Objects::nonNull)
                 .distinct()
-                .filter(p -> plugin.getHook(HMCCosmeticsHook.class).map(h -> !h.hasBackpack(p)).orElse(true))
+                // Do not skip backpack users: HMC's force-riding packets replace the passenger list
+                // and the periodic remount is what restores the nametag rows alongside the backpack.
                 .forEach(player -> getPacketDisplays(player).stream()
                         .findFirst()
                         .ifPresent(tag -> ((PacketNameTag) tag).sendPassengerPacketToViewers())),
