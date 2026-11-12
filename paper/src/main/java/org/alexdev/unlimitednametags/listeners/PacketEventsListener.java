@@ -145,11 +145,9 @@ public class PacketEventsListener extends PacketListenerAbstract {
         final Optional<? extends Player> owner = plugin.getPlayerListener().getPlayerFromEntityId(packet.getEntityId());
         if (owner.isEmpty()) return;
         final int[] original = packet.getPassengers();
-        if (!plugin.getPacketManager().knowsOwner(event.getUser(), owner.get())
-                && Arrays.stream(original).anyMatch(plugin.getPacketManager()::isRow)) {
-            event.setCancelled(true);
-            return;
-        }
+        // Compose at the packet boundary too: cancelling recovery mounts here defeats
+        // PacketManager's stale-owner-cache recovery and can also drop cosmetic passengers.
+        // The composer includes only visible rows whose spawn was observed on this connection.
         final int[] passengers = plugin.getPacketManager().passengers(event.getUser(), owner.get(), original);
         if (!Arrays.equals(original, passengers)) {
             packet.setPassengers(passengers);

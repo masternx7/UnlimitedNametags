@@ -55,6 +55,35 @@ class CraftEngineHookTest {
     }
 
     @Test
+    void resolvesNamespacedModelTypesFromGeneratedPacks(@TempDir Path temp) throws IOException {
+        final Path zip = temp.resolve("resource_pack.zip");
+        writePack(zip,
+                "assets/test/items/hat.json",
+                "{\"model\":{\"type\":\"minecraft:composite\",\"models\":["
+                        + "{\"type\":\"minecraft:model\",\"model\":\"test:item/hat_geometry\"}]}}",
+                "assets/test/models/item/hat_geometry.json",
+                "{\"elements\":[{\"to\":[0,32,0]}],\"display\":{\"head\":{}}}");
+
+        final JsonModelHeightResolver resolver = new JsonModelHeightResolver(zip.toFile());
+        assertEquals(35.2, resolver.heightForKey(Key.key("test", "hat")).orElseThrow(), 1.0e-6);
+    }
+
+    @Test
+    void resolvesNamespacedDispatchAndSelectTypes(@TempDir Path temp) throws IOException {
+        final Path zip = temp.resolve("resource_pack.zip");
+        writePack(zip,
+                "assets/test/items/hat.json",
+                "{\"model\":{\"type\":\"minecraft:range_dispatch\",\"entries\":["
+                        + "{\"threshold\":1,\"model\":{\"type\":\"minecraft:select\",\"cases\":["
+                        + "{\"when\":\"head\",\"model\":{\"type\":\"minecraft:model\",\"model\":\"test:item/hat_geometry\"}}]}}]}}",
+                "assets/test/models/item/hat_geometry.json",
+                "{\"elements\":[{\"to\":[0,16,0]}],\"display\":{\"head\":{}}}");
+
+        final JsonModelHeightResolver resolver = new JsonModelHeightResolver(zip.toFile());
+        assertEquals(17.6, resolver.heightForKey(Key.key("test", "hat")).orElseThrow(), 1.0e-6);
+    }
+
+    @Test
     void defaultMultiplierConvertsModelPixelsToBlocks() {
         // Resource-pack model units are 1/16 block, so a 32-pixel hat must raise the tag by two blocks.
         assertEquals(1f / 16f, new Advanced().getHelmetHeightYOffsetMultiplier());

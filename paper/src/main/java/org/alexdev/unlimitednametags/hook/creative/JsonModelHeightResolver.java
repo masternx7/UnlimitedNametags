@@ -97,7 +97,10 @@ public final class JsonModelHeightResolver {
     }
 
     private Key extractFirstReference(@NotNull JsonObject modelNode) {
-        final String type = string(modelNode, "type");
+        // Vanilla item model types normally carry the minecraft namespace.
+        final String rawType = string(modelNode, "type");
+        final String type = rawType.startsWith("minecraft:")
+                ? rawType.substring("minecraft:".length()) : rawType;
         if ("model".equals(type) && modelNode.has("model")) {
             return parseKey(modelNode.get("model").getAsString(), "minecraft");
         }
