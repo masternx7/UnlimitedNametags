@@ -29,8 +29,12 @@ public class Advanced {
     })
     private long helmetRulesDebugCooldownMs = 5000L;
 
-    @Comment("Converts hat-hook helmet height into extra nametag yOffset. Increase if the nametag still clips tall hats.")
-    private float helmetHeightYOffsetMultiplier = 0.25f / 14f;
+    @Comment({
+            "Converts hat-hook helmet height into extra nametag yOffset.",
+            "Hat hooks report resource-pack model units (1/16 block), so 1/16 keeps the tag above the model.",
+            "Lower this if tall-hat nametags float too high."
+    })
+    private float helmetHeightYOffsetMultiplier = 1f / 16f;
 
     @Configuration
     @Getter

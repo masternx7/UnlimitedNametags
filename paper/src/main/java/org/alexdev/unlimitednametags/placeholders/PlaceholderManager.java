@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -71,6 +72,9 @@ public class PlaceholderManager {
     private Map<String, Long> perPlaceholderTtlMs;
     private final Map<String, String> formattedPhaseValues;
     private final Map<String, Map<String, String>> placeholdersReplacements;
+    /** Per-player throttle for helmet-offset failures; a broken hat hook must not erase every nametag. */
+    private final Map<UUID, Long> helmetOffsetWarnings = Maps.newConcurrentMap();
+    private static final long HELMET_OFFSET_WARNING_COOLDOWN_MS = 60_000L;
 
     public PlaceholderManager(@NotNull UnlimitedNameTags plugin) {
         this.plugin = plugin;
@@ -125,6 +129,7 @@ public class PlaceholderManager {
     public void removePlayer(@NotNull Player player) {
         cachedPlaceholders.remove(player.getUniqueId());
         HelmetRuleDebugThrottle.remove(player.getUniqueId());
+        helmetOffsetWarnings.remove(player.getUniqueId());
     }
 
     private void createDecimalFormat() {
@@ -388,7 +393,14 @@ public class PlaceholderManager {
             double rawHeight = 0d;
             HatHook winner = null;
             for (final HatHook hook : plugin.getHatHooks()) {
-                final double v = hook.getHigh(player.getUniqueId());
+                final double v;
+                try {
+                    v = hook.getHigh(player.getUniqueId());
+                } catch (Throwable throwable) {
+                    plugin.getLogger().log(Level.FINE,
+                            "Hat hook " + hook.getClass().getSimpleName() + " failed for " + player.getName(), throwable);
+                    continue;
+                }
                 if (verbose) {
                     plugin.getLogger().info("[UNT helmet dbg]   " + hook.getClass().getSimpleName() + ".getHigh -> " + v);
                 }
@@ -399,7 +411,14 @@ public class PlaceholderManager {
 
                 if (hook instanceof HatHookPaper paperHook) {
                     for (final ItemStack source : hatSources) {
-                        final double sourceHeight = paperHook.getHigh(player, source);
+                        final double sourceHeight;
+                        try {
+                            sourceHeight = paperHook.getHigh(player, source);
+                        } catch (Throwable throwable) {
+                            plugin.getLogger().log(Level.FINE, "Hat hook " + hook.getClass().getSimpleName()
+                                    + " failed for source " + source.getType(), throwable);
+                            continue;
+                        }
                         if (verbose) {
                             plugin.getLogger().info("[UNT helmet dbg]   " + hook.getClass().getSimpleName()
                                     + ".getHigh(source=" + source.getType() + ") -> " + sourceHeight);
@@ -430,19 +449,44 @@ public class PlaceholderManager {
                 plugin.getLogger().info("[UNT helmet dbg] multiplier=" + multiplier + " final helmetExtraOffset=" + offset);
             }
             return offset;
+        } catch (Throwable throwable) {
+            warnHelmetOffsetFailure(player, throwable);
+            return 0f;
         } finally {
             HelmetDebugContext.clear();
         }
     }
 
+    private void warnHelmetOffsetFailure(@NotNull Player player, @NotNull Throwable throwable) {
+        final long now = System.currentTimeMillis();
+        final Long lastWarning = helmetOffsetWarnings.get(player.getUniqueId());
+        if (lastWarning != null && now - lastWarning < HELMET_OFFSET_WARNING_COOLDOWN_MS) {
+            return;
+        }
+        helmetOffsetWarnings.put(player.getUniqueId(), now);
+        plugin.getLogger().log(Level.WARNING,
+                "Failed to compute helmet offset for " + player.getName() + "; keeping the nametag at the default height",
+                throwable);
+    }
+
     private @NotNull List<ItemStack> collectHatSources(@NotNull Player player) {
         final List<ItemStack> sources = new ArrayList<>();
-        final ItemStack helmet = player.getInventory().getHelmet();
-        addHatSource(sources, helmet);
+        try {
+            addHatSource(sources, player.getInventory().getHelmet());
+        } catch (Throwable throwable) {
+            // Folia rejects cross-region inventory reads from the async refresh task; virtual hat
+            // sources (HMCCosmetics) below are still collected and keep the offset working.
+            plugin.getLogger().log(Level.FINE, "Could not read helmet inventory for " + player.getName(), throwable);
+        }
         for (final HatHook hook : plugin.getHatHooks()) {
             if (hook instanceof HatHookPaper paperHook) {
-                for (final ItemStack item : paperHook.getHatItems(player)) {
-                    addHatSource(sources, item);
+                try {
+                    for (final ItemStack item : paperHook.getHatItems(player)) {
+                        addHatSource(sources, item);
+                    }
+                } catch (Throwable throwable) {
+                    plugin.getLogger().log(Level.FINE,
+                            "Could not read virtual hat items from " + hook.getClass().getSimpleName(), throwable);
                 }
             }
         }

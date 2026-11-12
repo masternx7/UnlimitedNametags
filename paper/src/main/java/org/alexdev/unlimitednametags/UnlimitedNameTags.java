@@ -242,6 +242,13 @@ public final class UnlimitedNameTags extends JavaPlugin implements UnlimitedName
             hooks.put(ItemsAdderHook.class, hook);
         }
 
+        if (Bukkit.getPluginManager().isPluginEnabled("CraftEngine")) {
+            getLogger().info("CraftEngine found, hooking into it for hat heights");
+            final CraftEngineHook hook = new CraftEngineHook(this);
+            hatHooks.add(hook);
+            hooks.put(CraftEngineHook.class, hook);
+        }
+
         if (Bukkit.getPluginManager().isPluginEnabled("ViaVersion")) {
             final ViaVersionHook hook = new ViaVersionHook(this);
             hooks.put(ViaVersionHook.class, hook);

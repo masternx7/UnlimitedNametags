@@ -23,6 +23,8 @@ softdepend:
   - ViaRewind
   - Oraxen
   - Nexo
+  - ItemsAdder
+  - CraftEngine
   - HMCCosmetics
 permissions:
   unt.shownametags:

@@ -1,6 +1,7 @@
 package org.alexdev.unlimitednametags.hook;
 
 import com.hibiscusmc.hmccosmetics.api.HMCCosmeticsAPI;
+import com.hibiscusmc.hmccosmetics.cosmetic.Cosmetic;
 import com.hibiscusmc.hmccosmetics.cosmetic.CosmeticSlot;
 import com.hibiscusmc.hmccosmetics.user.CosmeticUser;
 import org.alexdev.unlimitednametags.UnlimitedNameTags;
@@ -62,11 +63,15 @@ public class HMCCosmeticsHook extends Hook implements HatHookPaper {
             return List.of();
         }
 
-        if (!user.hasCosmeticInSlot(CosmeticSlot.HELMET)) {
+        final Cosmetic cosmetic = user.getCosmetic(CosmeticSlot.HELMET);
+        if (cosmetic == null) {
             return List.of();
         }
 
-        final ItemStack item = user.getUserCosmeticItem(CosmeticSlot.HELMET);
+        // Use the configured cosmetic template instead of getUserCosmeticItem(): hat height only needs
+        // the model, while the per-user item reads the player's inventory and is not safe on the async
+        // refresh thread (Folia rejects the cross-region access).
+        final ItemStack item = cosmetic.getItem();
         if (item == null || item.getType().isAir()) {
             return List.of();
         }
